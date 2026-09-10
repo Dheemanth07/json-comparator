@@ -11,6 +11,11 @@ assignees: ''
 A clear and concise description of what the bug is.
 
 **To Reproduce**
+Include minimal synthetic left/right JSON, the workspace, and comparison settings
+(array mode, match key, tolerance, and path filters where applicable). Never
+paste real credentials or private JSON. Report security issues using the
+[security policy](../SECURITY.md).
+
 Steps to reproduce the behavior:
 1. Go to '...'
 2. Click on '....'
@@ -19,6 +24,9 @@ Steps to reproduce the behavior:
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
+
+**Actual behavior**
+Include the incorrect output or error text, and the app URL or commit tested.
 
 **Screenshots**
 If applicable, add screenshots to help explain your problem.

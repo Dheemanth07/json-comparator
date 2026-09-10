@@ -8,8 +8,8 @@
 
 ## Testing
 
-- [ ] `npm test -- --watchAll=false`
-- [ ] `npm run build`
+- [ ] `CI=true npm test -- --watchAll=false --runInBand`
+- [ ] `CI=true npm run build`
 - [ ] Manually tested the affected workflow
 
 ## UI Changes

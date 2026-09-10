@@ -365,6 +365,14 @@ npm run build
 - Large JSON comparison can still be CPU-heavy because semantic comparison must traverse the parsed structures.
 - Undo/redo uses full snapshots only below the configured history size limit; very large documents should use explicit structured actions carefully.
 
+## Contributing
+
+Contributions are welcome! Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup,
+the project map, checks, and the pull request workflow. Browse
+[help wanted issues](https://github.com/shubhamashish33/json-comparator/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22help%20wanted%22)
+to find a task. Please follow our [Code of Conduct](.github/CODE_OF_CONDUCT.md)
+and use the [Security Policy](.github/SECURITY.md) for vulnerability reports.
+
 ## License
 
 MIT
