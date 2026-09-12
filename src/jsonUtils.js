@@ -283,22 +283,91 @@ const compareArrayByKey = (left, right, path, settings, compareAny) => {
   const keyName = settings.arrayMatchKey?.trim();
   if (!keyName) return compareArrayByIndex(left, right, path, settings, compareAny);
 
-  const leftMap = new Map();
-  const rightMap = new Map();
-  left.forEach((item, index) => leftMap.set(String(item?.[keyName] ?? `__index_${index}`), { item, index }));
-  right.forEach((item, index) => rightMap.set(String(item?.[keyName] ?? `__index_${index}`), { item, index }));
+  const isObject = (val) => val !== null && typeof val === "object" && !Array.isArray(val);
+  const hasKey = (item) => isObject(item) && keyName in item && item[keyName] !== undefined && item[keyName] !== null;
+
+  const bucketEntries = (items) => {
+    const idBuckets = new Map();
+    const missing = [];
+    items.forEach((item, index) => {
+      if (hasKey(item)) {
+        const key = String(item[keyName]);
+        const bucket = idBuckets.get(key) || [];
+        bucket.push({ item, index });
+        idBuckets.set(key, bucket);
+      } else {
+        missing.push({ item, index });
+      }
+    });
+    return { idBuckets, missing };
+  };
+
+  const leftResult = bucketEntries(left);
+  const rightResult = bucketEntries(right);
 
   const differences = [];
-  const allKeys = new Set([...leftMap.keys(), ...rightMap.keys()]);
+
+  // 1. Compare entries with match keys
+  const allKeys = new Set([...leftResult.idBuckets.keys(), ...rightResult.idBuckets.keys()]);
   allKeys.forEach((key) => {
-    const leftEntry = leftMap.get(key);
-    const rightEntry = rightMap.get(key);
-    const currentPath = `${path || "root"}[${keyName}=${JSON.stringify(key)}]`;
-    if (shouldSkipPath(currentPath, settings)) return;
-    if (!leftEntry) differences.push({ path: currentPath, type: "added", value: rightEntry.item });
-    else if (!rightEntry) differences.push({ path: currentPath, type: "removed", value: leftEntry.item });
-    else appendDifferences(differences, compareAny(leftEntry.item, rightEntry.item, currentPath));
+    const leftEntries = leftResult.idBuckets.get(key) || [];
+    const rightEntries = rightResult.idBuckets.get(key) || [];
+    const isDuplicateKey = leftEntries.length > 1 || rightEntries.length > 1;
+    const sharedCount = Math.min(leftEntries.length, rightEntries.length);
+
+    for (let index = 0; index < sharedCount; index += 1) {
+      const leftEntry = leftEntries[index];
+      const rightEntry = rightEntries[index];
+      const currentPath = isDuplicateKey
+        ? `${path || "root"}[${keyName}=${JSON.stringify(key)}][${leftEntry.index}]`
+        : `${path || "root"}[${keyName}=${JSON.stringify(key)}]`;
+      if (!shouldSkipPath(currentPath, settings)) {
+        appendDifferences(differences, compareAny(leftEntry.item, rightEntry.item, currentPath));
+      }
+    }
+
+    leftEntries.slice(sharedCount).forEach(({ item, index }) => {
+      const currentPath = isDuplicateKey
+        ? `${path || "root"}[${keyName}=${JSON.stringify(key)}][${index}]`
+        : `${path || "root"}[${keyName}=${JSON.stringify(key)}]`;
+      if (!shouldSkipPath(currentPath, settings)) {
+        differences.push({ path: currentPath, type: "removed", value: item });
+      }
+    });
+
+    rightEntries.slice(sharedCount).forEach(({ item, index }) => {
+      const currentPath = isDuplicateKey
+        ? `${path || "root"}[${keyName}=${JSON.stringify(key)}][${index}]`
+        : `${path || "root"}[${keyName}=${JSON.stringify(key)}]`;
+      if (!shouldSkipPath(currentPath, settings)) {
+        differences.push({ path: currentPath, type: "added", value: item });
+      }
+    });
   });
+
+  // 2. Compare missing-key fallback entries (kept separate from actual IDs)
+  const maxMissing = Math.max(leftResult.missing.length, rightResult.missing.length);
+  for (let index = 0; index < maxMissing; index += 1) {
+    const leftEntry = leftResult.missing[index];
+    const rightEntry = rightResult.missing[index];
+    if (!leftEntry) {
+      const currentPath = formatPath(path, rightEntry.index);
+      if (!shouldSkipPath(currentPath, settings)) {
+        differences.push({ path: currentPath, type: "added", value: rightEntry.item });
+      }
+    } else if (!rightEntry) {
+      const currentPath = formatPath(path, leftEntry.index);
+      if (!shouldSkipPath(currentPath, settings)) {
+        differences.push({ path: currentPath, type: "removed", value: leftEntry.item });
+      }
+    } else {
+      const currentPath = formatPath(path, leftEntry.index);
+      if (!shouldSkipPath(currentPath, settings)) {
+        appendDifferences(differences, compareAny(leftEntry.item, rightEntry.item, currentPath));
+      }
+    }
+  }
+
   return differences;
 };
 
