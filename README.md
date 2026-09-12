@@ -142,7 +142,7 @@ Comparison options:
 - Array comparison by index, ignore-order, or object match key.
 - Include/ignore path filters.
 
-Match-key comparison retains duplicate keys and compares repeated entries in appearance order, retaining original indices so duplicate differences remain individually identifiable. Extra repeated entries are reported as added or removed. Entries missing the match key are kept in a separate fallback bucket using their positional array index to avoid ID collisions, and numeric and string key values are normalized to match the same bucket while respecting comparison settings.
+Match-key comparison retains duplicate keys and compares repeated entries in appearance order using a stable occurrence identifier so duplicate differences remain individually identifiable without index overlap. Extra repeated entries are reported as added or removed. Entries missing the match key preserve true positional fallback semantics by comparing at their array index, and numeric and string key values are normalized to match the same bucket while respecting comparison settings.
 
 Exports:
 
